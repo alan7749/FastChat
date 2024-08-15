@@ -1,6 +1,8 @@
 """
 Common data structures and utilities.
 """
+import google.generativeai as genai
+import time
 
 import ast
 import dataclasses
@@ -164,7 +166,33 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     conv.append_message(conv.roles[1], None)
 
     if model in OPENAI_MODEL_LIST:
-        judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
+        # judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
+        # print(f'conv: {conv}') 
+        messages = conv.to_openai_api_messages()       
+        # print(f'messages: {messages}')
+        prompt = messages[0]["content"] + messages[1]["content"]
+        api_key = 'use your api key'
+        genai.configure(api_key = api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        try:
+          judgment = model.generate_content(prompt)
+        except:
+          time.sleep(60)
+          judgment = model.generate_content(prompt)
+        # print(f'judgment: {judgment}')
+        # judgment = judgment._result.candidates[0]
+        # print(f'judgment1: {judgment}')
+        # # judgment = judgment._result.candidates[0].content.parts[0].text
+        try: 
+          # judgment = judgment.content.parts[0].text
+          judgment = judgment.text
+          print(f'judgment: {judgment}')
+        except:
+          print('===================== something was wrong =====================')
+          print(f'judgment: {judgment}')
+          return -1, 'user_prompt', 'judgment'
+        # print(f'judgment2: {judgment}')
+        time.sleep(16)
     elif model in ANTHROPIC_MODEL_LIST:
         judgment = chat_completion_anthropic(
             model, conv, temperature=0, max_tokens=1024
